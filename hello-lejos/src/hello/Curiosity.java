@@ -35,6 +35,13 @@ public class Curiosity {
 		mC.rotate(motorDegrees);
 	}
 	
+	public void moveForwardWhileFooting(double centimeters) {
+		int motorDegrees = (int) (30 * centimeters);
+		mB.rotate(motorDegrees , true); 
+		mC.rotate(motorDegrees, true);
+		
+	}
+	
 	public void moveBackward(double centimeters) {
 		int motorDegrees = (int) (30 * centimeters);
 		mB.rotate(-motorDegrees , true);
