@@ -21,8 +21,8 @@ public class SimpleMoves {
 		lcd.drawString("Hello Trayan", 4, 2);
 		mB.synchronizeWith(new RegulatedMotor[] {mC});
 		mB.startSynchronization();
-		mB.forward();
-		mC.forward();
+		mB.rotate(510, true);
+		mC.rotate(-510, true);
 		mB.endSynchronization();
 
 		
