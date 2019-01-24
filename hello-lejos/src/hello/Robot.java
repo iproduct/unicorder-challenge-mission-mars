@@ -15,7 +15,7 @@ import lejos.hardware.sensor.SensorMode;
 import lejos.robotics.RegulatedMotor;
 import lejos.utility.Delay;
 
-public class Curiosity {
+public class Robot {
 	private EV3 ev3 = (EV3) BrickFinder.getLocal();
 	private TextLCD lcd = ev3.getTextLCD();
 	private Keys keys = ev3.getKeys();
@@ -28,11 +28,15 @@ public class Curiosity {
 	private EV3TouchSensor touchSensor = new EV3TouchSensor(SensorPort.S1);
 	private float[] samples;
 
-	public Curiosity() {
+	public Robot() {
 		colorSensor.setCurrentMode(colorSensor.getRGBMode().getName());
 		SensorMode mode = colorSensor.getRGBMode();
 		samples = new float[mode.sampleSize()];
 		touchSensor.setCurrentMode(touchSensor.getTouchMode().getName());
+	}
+	
+	public MovementStatus execute(Behavior behavior) {
+		return behavior.execute(this);
 	}
 
 	public void moveForward(double centimeters) {
@@ -41,23 +45,30 @@ public class Curiosity {
 		mC.rotate(motorDegrees);
 	}
 
-	public void moveForwardWhileFootingAndNoObstacle(double centimeters) {
+	public MovementStatus moveForwardWhileFootingAndNoObstacle(double centimeters) {
 		int motorDegrees = (int) (30 * centimeters);
 		mB.rotate(motorDegrees, true);
 		mC.rotate(motorDegrees, true);
 		
 		// Go while there is footing
 		float[] rgb;
+		boolean isFooting, isObstacle;
 		do {
+			Delay.msDelay(20);
 			rgb = sampleRGBColor();
 			printRGBColor(rgb);
-			Delay.msDelay(20);
-		} while(mB.isMoving() && mC.isMoving() && isFooting(rgb) && !isTouchingObstacle());
+			isFooting = isFooting(rgb);
+			isObstacle = isTouchingObstacle();
+		} while(mB.isMoving() && mC.isMoving() && isFooting && !isObstacle);
 		
 		// else stop
 		mB.stop(true);
 		mC.stop(true);
 		Sound.beep();
+		
+		if(!isFooting) return MovementStatus.NO_FOOTING;
+		else if(isObstacle) return MovementStatus.OBSTACLE;
+		else return MovementStatus.OK;
 	}
 
 	public void moveBackward(double centimeters) {
@@ -124,8 +135,9 @@ public class Curiosity {
 	}
 
 	public static void main(String[] args) {
-		Curiosity robot = new Curiosity();
-		robot.moveForwardWhileFootingAndNoObstacle(50);
+		Robot robot = new Robot();
+		robot.execute(new GoSquareBehavior(35));
+//		robot.moveForwardWhileFootingAndNoObstacle(50);
 			
 //		robot.moveForwardWhileFooting(50);
 //		float[] rgb = robot.sampleRGBColor();
