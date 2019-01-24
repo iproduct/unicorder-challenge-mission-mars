@@ -6,9 +6,11 @@ import lejos.hardware.Sound;
 import lejos.hardware.ev3.EV3;
 import lejos.hardware.lcd.TextLCD;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
+import lejos.hardware.port.AnalogPort;
 import lejos.hardware.port.MotorPort;
 import lejos.hardware.port.SensorPort;
 import lejos.hardware.sensor.EV3ColorSensor;
+import lejos.hardware.sensor.EV3TouchSensor;
 import lejos.hardware.sensor.SensorMode;
 import lejos.robotics.RegulatedMotor;
 import lejos.utility.Delay;
@@ -23,12 +25,14 @@ public class Curiosity {
 	private RegulatedMotor mC = new EV3LargeRegulatedMotor(MotorPort.C);
 	// Sensors
 	private EV3ColorSensor colorSensor = new EV3ColorSensor(SensorPort.S4);
+	private EV3TouchSensor touchSensor = new EV3TouchSensor(SensorPort.S1);
 	private float[] samples;
 
 	public Curiosity() {
 		colorSensor.setCurrentMode(colorSensor.getRGBMode().getName());
 		SensorMode mode = colorSensor.getRGBMode();
 		samples = new float[mode.sampleSize()];
+		touchSensor.setCurrentMode(touchSensor.getTouchMode().getName());
 	}
 
 	public void moveForward(double centimeters) {
@@ -37,7 +41,7 @@ public class Curiosity {
 		mC.rotate(motorDegrees);
 	}
 
-	public void moveForwardWhileFooting(double centimeters) {
+	public void moveForwardWhileFootingAndNoObstacle(double centimeters) {
 		int motorDegrees = (int) (30 * centimeters);
 		mB.rotate(motorDegrees, true);
 		mC.rotate(motorDegrees, true);
@@ -48,7 +52,7 @@ public class Curiosity {
 			rgb = sampleRGBColor();
 			printRGBColor(rgb);
 			Delay.msDelay(20);
-		} while(mB.isMoving() && mC.isMoving() && isFooting(rgb));
+		} while(mB.isMoving() && mC.isMoving() && isFooting(rgb) && !isTouchingObstacle());
 		
 		// else stop
 		mB.stop(true);
@@ -92,6 +96,11 @@ public class Curiosity {
 		return samples;
 	}
 
+	public boolean isTouchingObstacle() {
+		touchSensor.fetchSample(samples, 0);
+		return samples[0] == 1;
+	}
+
 	public void printRGBColor(float[] rgb) {
 		lcd.drawString("R: " + rgb[0], 0, 3);
 		lcd.drawString("G: " + rgb[1], 0, 4);
@@ -103,10 +112,22 @@ public class Curiosity {
 				|| rgb[1] > 0.015 // Green color
 				|| rgb[2] > 0.015; // Blue color
 	}
+	
+	public void monitorObstacle() {
+		boolean isObstacle;
+		do {
+			Delay.msDelay(20);
+			isObstacle = isTouchingObstacle();
+			lcd.drawString("Touch: " + isObstacle, 0, 2);
+		} while (!isObstacle);
+		Sound.buzz();
+	}
 
 	public static void main(String[] args) {
 		Curiosity robot = new Curiosity();
-		robot.moveForwardWhileFooting(50);
+		robot.moveForwardWhileFootingAndNoObstacle(50);
+			
+//		robot.moveForwardWhileFooting(50);
 //		float[] rgb = robot.sampleRGBColor();
 //		robot.printRGBColor(rgb);
 //		robot.keys.waitForAnyPress(50000);
