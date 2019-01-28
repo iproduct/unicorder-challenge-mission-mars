@@ -18,9 +18,9 @@ public class ObstacleAvoidanceBehavior implements Behavior {
 		MovementStatus status = MovementStatus.OK;
 		double distanceTravelled = 0;
 		do {
-			status = robot.moveForwardWhileFootingAndNoObstacle(distance - distanceTravelled);
+			status = robot.moveForwardWhileNoColorAndNoObstacle(distance - distanceTravelled);
 			distanceTravelled += robot.getState().getLastTravelledDistance();
-			if (status.equals(MovementStatus.NO_FOOTING)) {
+			if (status.equals(MovementStatus.STOP_COLOR)) {
 				robot.moveBackward(5);
 				distanceTravelled += robot.getState().getLastTravelledDistance();
 				robot.turnRight(90);

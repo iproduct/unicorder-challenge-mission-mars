@@ -97,7 +97,11 @@ public class Robot {
 				(2 * MOTOR_DEGREES_TO_CENTIMETERS_RATIO) );
 	}
 
-	public MovementStatus moveForwardWhileFootingAndNoObstacle(double centimeters) {
+	public MovementStatus moveForwardWhileNoColorAndNoObstacle(double centimeters) {
+		return moveForwardWhileNoColorAndNoObstacle(centimeters, Color.BLACK);
+	}
+		
+	public MovementStatus moveForwardWhileNoColorAndNoObstacle(double centimeters, Color color) {
 		double tachoB = mB.getTachoCount();
 		double tachoC = mC.getTachoCount();
 		int motorDegrees = (int) (MOTOR_DEGREES_TO_CENTIMETERS_RATIO * centimeters);
@@ -107,14 +111,15 @@ public class Robot {
 		// Go while there is footing
 		float[] rgb;
 		boolean isFootingAhead, isObstacle;
+		Color colorAhead;
 		do {
 			Delay.msDelay(20);
-			rgb = sampleRGBColor();
 //			printRGBColor(rgb);
 			printTachoCounts();
-			isFootingAhead = isFootingAhead(rgb);
+			colorAhead = getColorAhead();
+			System.out.println("Color: " + colorAhead);
 			isObstacle = isTouchingObstacle();
-		} while(mB.isMoving() && mC.isMoving() && isFootingAhead && !isObstacle);
+		} while(mB.isMoving() && mC.isMoving() && colorAhead != color && !isObstacle);
 		
 		// else stop
 		mB.stop(true);
@@ -126,7 +131,7 @@ public class Robot {
 				+ mC.getTachoCount() - tachoC) / 
 				(2 * MOTOR_DEGREES_TO_CENTIMETERS_RATIO));
 		
-		if(!isFootingAhead) return MovementStatus.NO_FOOTING;
+		if(colorAhead == color) return MovementStatus.STOP_COLOR;
 		else if(isObstacle) return MovementStatus.OBSTACLE;
 		else return MovementStatus.OK;
 	}
@@ -164,7 +169,7 @@ public class Robot {
 				(2 * MOTOR_DEGREES_TO_CENTIMETERS_RATIO));
 	}
 
-	public Color turnLeftWhileNotColor(double degrees, Color color) {
+	public MovementStatus turnLeftWhileNotColor(double degrees, Color color) {
 		double tachoB = mB.getTachoCount();
 		double tachoC = mC.getTachoCount();
 		int motorDegrees = (int) (510D * degrees / 90);
@@ -172,19 +177,21 @@ public class Robot {
 		mC.rotate(motorDegrees, true);
 		Color colorAhead;
 		do {
-			Delay.msDelay(20);
+			Delay.msDelay(5);
 			colorAhead = getColorAhead();
 		} while ((mB.isMoving() || mC.isMoving()) && colorAhead != color);
 		mB.stop(true);
 		mC.stop(true);
+		mB.rotate(20, true);
+		mC.rotate(-20, true);
 		Sound.beep();
 		state.setLastTravelledDistance( Math.abs(mB.getTachoCount() - tachoB 
 				+ mC.getTachoCount() - tachoC) / 
 				(2 * MOTOR_DEGREES_TO_CENTIMETERS_RATIO));
-		return colorAhead;
+		return (colorAhead == color) ? MovementStatus.STOP_COLOR : MovementStatus.OK;
 	}
 
-	public Color turnRightWhileNotColor(double degrees, Color color) {
+	public MovementStatus turnRightWhileNotColor(double degrees, Color color) {
 		double tachoB = mB.getTachoCount();
 		double tachoC = mC.getTachoCount();
 		int motorDegrees = (int) (510D * degrees / 90);
@@ -192,16 +199,18 @@ public class Robot {
 		mC.rotate(-motorDegrees, true);
 		Color colorAhead;
 		do {
-			Delay.msDelay(20);
+			Delay.msDelay(5);
 			colorAhead = getColorAhead();
 		} while ((mB.isMoving() || mC.isMoving()) && colorAhead != color);
 		mB.stop(true);
 		mC.stop(true);
+		mB.rotate(-20, true);
+		mC.rotate(20, true);
 		Sound.beep();
 		state.setLastTravelledDistance( Math.abs(mB.getTachoCount() - tachoB 
 				+ mC.getTachoCount() - tachoC) / 
 				(2 * MOTOR_DEGREES_TO_CENTIMETERS_RATIO));
-		return colorAhead;
+		return (colorAhead == color) ? MovementStatus.STOP_COLOR : MovementStatus.OK;
 	}
 
 	public void grable(double degrees) {
@@ -226,9 +235,9 @@ public class Robot {
 		float[] rgb = sampleRGBColor();
 		if (rgb[0] < 0.015 && rgb[1] < 0.015 && rgb[2] < 0.015) {
 			return Color.BLACK;
-		} else if (rgb[0] > 0.05 && rgb[1] < 0.015 && rgb[2] < 0.015) {
+		} else if (rgb[0] > 0.03 && rgb[1] < 0.015 && rgb[2] < 0.015) {
 			return Color.RED;
-		} else if (rgb[0] > 0.015 && rgb[1] < 0.015 && rgb[2] > 0.05) {
+		} else if (rgb[0] < 0.015 && rgb[1] < 0.015 && rgb[2] > 0.03) {
 			return Color.BLUE;
 		} else {
 			return Color.OTHER;
@@ -274,9 +283,11 @@ public class Robot {
 
 	public static void main(String[] args) {
 		Robot robot = new Robot(new State());
-		robot.turnRightWhileNotColor(360, Color.RED);
-		robot.lcd.drawString("Color: " + robot.getColorAhead(), 0, 2);
+		robot.execute(new LineFollowBehavior(100));
 		
+		
+//		robot.turnRightWhileNotColor(360, Color.RED);	
+//		robot.lcd.drawString("Color: " + robot.getColorAhead(), 0, 2);
 //		robot.execute(new ObstacleAvoidanceBehavior(100));
 //		robot.moveForwardWhileFootingAndNoObstacle(50);
 //		robot.moveForwardWhileFooting(50);
