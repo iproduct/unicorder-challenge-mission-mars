@@ -14,7 +14,7 @@ public class LineFollowBehavior implements Behavior {
 		robot.getMotorC().setSpeed(150);
 		do {
 			double angle = 15;
-			MovementStatus status;
+			MovementStatus status;  
 			do {
 				System.out.println("Turn Left " + angle);
 				status = robot.turnLeftWhileNotColor(angle, Color.RED);
