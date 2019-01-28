@@ -2,17 +2,20 @@ package hello;
 
 public class ObstacleAvoidanceBehavior implements Behavior {
 	
-	public static final double MINIMAL_DISTANCE_TRESHOLD = 1; // in centimetertes
+	public static final double MINIMAL_DISTANCE_TRESHOLD = 0.1; // in centimetertes
 
 	private double distance = 40;
 
+	public ObstacleAvoidanceBehavior() {
+	}
+	
 	public ObstacleAvoidanceBehavior(double distance) {
 		this.distance = distance;
 	}
 
 	@Override
 	public MovementStatus execute(Robot robot) {
-		MovementStatus status;
+		MovementStatus status = MovementStatus.OK;
 		double distanceTravelled = 0;
 		do {
 			status = robot.moveForwardWhileFootingAndNoObstacle(distance - distanceTravelled);

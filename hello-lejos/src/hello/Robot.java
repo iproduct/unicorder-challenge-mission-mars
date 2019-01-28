@@ -6,7 +6,6 @@ import lejos.hardware.Sound;
 import lejos.hardware.ev3.EV3;
 import lejos.hardware.lcd.TextLCD;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
-import lejos.hardware.port.AnalogPort;
 import lejos.hardware.port.MotorPort;
 import lejos.hardware.port.SensorPort;
 import lejos.hardware.sensor.EV3ColorSensor;
@@ -165,6 +164,46 @@ public class Robot {
 				(2 * MOTOR_DEGREES_TO_CENTIMETERS_RATIO));
 	}
 
+	public Color turnLeftWhileNotColor(double degrees, Color color) {
+		double tachoB = mB.getTachoCount();
+		double tachoC = mC.getTachoCount();
+		int motorDegrees = (int) (510D * degrees / 90);
+		mB.rotate(-motorDegrees, true);
+		mC.rotate(motorDegrees, true);
+		Color colorAhead;
+		do {
+			Delay.msDelay(20);
+			colorAhead = getColorAhead();
+		} while ((mB.isMoving() || mC.isMoving()) && colorAhead != color);
+		mB.stop(true);
+		mC.stop(true);
+		Sound.beep();
+		state.setLastTravelledDistance( Math.abs(mB.getTachoCount() - tachoB 
+				+ mC.getTachoCount() - tachoC) / 
+				(2 * MOTOR_DEGREES_TO_CENTIMETERS_RATIO));
+		return colorAhead;
+	}
+
+	public Color turnRightWhileNotColor(double degrees, Color color) {
+		double tachoB = mB.getTachoCount();
+		double tachoC = mC.getTachoCount();
+		int motorDegrees = (int) (510D * degrees / 90);
+		mB.rotate(motorDegrees, true);
+		mC.rotate(-motorDegrees, true);
+		Color colorAhead;
+		do {
+			Delay.msDelay(20);
+			colorAhead = getColorAhead();
+		} while ((mB.isMoving() || mC.isMoving()) && colorAhead != color);
+		mB.stop(true);
+		mC.stop(true);
+		Sound.beep();
+		state.setLastTravelledDistance( Math.abs(mB.getTachoCount() - tachoB 
+				+ mC.getTachoCount() - tachoC) / 
+				(2 * MOTOR_DEGREES_TO_CENTIMETERS_RATIO));
+		return colorAhead;
+	}
+
 	public void grable(double degrees) {
 		mA.rotate((int) (6.8 * degrees));
 	}
@@ -181,6 +220,19 @@ public class Robot {
 	public float[] sampleRGBColor() {
 		colorSensor.fetchSample(samples, 0);
 		return samples;
+	}
+	
+	public Color getColorAhead() {
+		float[] rgb = sampleRGBColor();
+		if (rgb[0] < 0.015 && rgb[1] < 0.015 && rgb[2] < 0.015) {
+			return Color.BLACK;
+		} else if (rgb[0] > 0.05 && rgb[1] < 0.015 && rgb[2] < 0.015) {
+			return Color.RED;
+		} else if (rgb[0] > 0.015 && rgb[1] < 0.015 && rgb[2] > 0.05) {
+			return Color.BLUE;
+		} else {
+			return Color.OTHER;
+		}
 	}
 
 	public boolean isTouchingObstacle() {
@@ -222,9 +274,11 @@ public class Robot {
 
 	public static void main(String[] args) {
 		Robot robot = new Robot(new State());
-		robot.execute(new ObstacleAvoidanceBehavior(100));
+		robot.turnRightWhileNotColor(360, Color.RED);
+		robot.lcd.drawString("Color: " + robot.getColorAhead(), 0, 2);
+		
+//		robot.execute(new ObstacleAvoidanceBehavior(100));
 //		robot.moveForwardWhileFootingAndNoObstacle(50);
-			
 //		robot.moveForwardWhileFooting(50);
 //		float[] rgb = robot.sampleRGBColor();
 //		robot.printRGBColor(rgb);
